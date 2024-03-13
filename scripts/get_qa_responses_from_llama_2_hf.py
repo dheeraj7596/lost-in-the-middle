@@ -25,6 +25,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from xopen import xopen
+
+sys.path.append('/data/dmekala/lost-in-the-middle/src')
 from lost_in_the_middle.prompting import (
     Document,
     get_closedbook_qa_prompt,
@@ -162,7 +164,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name,gpu_batch_size=4)
+    model = ModelWrapper(model_name, gpu_batch_size=4)
     generation_config = {
         "temperature": temperature,
         "max_new_tokens": max_new_tokens,
