@@ -11,6 +11,7 @@ from copy import deepcopy
 from tqdm import tqdm
 from xopen import xopen
 
+sys.path.append('/data/dmekala/lost-in-the-middle/src')
 from lost_in_the_middle.metrics import best_subspan_em
 
 logger = logging.getLogger(__name__)
