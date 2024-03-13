@@ -164,7 +164,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name, gpu_batch_size=4)
+    model = ModelWrapper(model_name, gpu_batch_size=64)
     if temperature != 0:
         do_sample = True
     else:
