@@ -25,7 +25,6 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from xopen import xopen
-
 from lost_in_the_middle.prompting import (
     Document,
     get_closedbook_qa_prompt,
