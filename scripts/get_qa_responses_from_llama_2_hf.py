@@ -165,10 +165,14 @@ def main(
 
     logger.info("Loading model")
     model = ModelWrapper(model_name, gpu_batch_size=4)
+    if temperature != 0:
+        do_sample = True
+    else:
+        do_sample = False
     generation_config = {
         "temperature": temperature,
         "max_new_tokens": max_new_tokens,
-        "do_sample": True,
+        "do_sample": do_sample,
         "top_p": top_p,
     }
     raw_responses = model.inference(prompts, generation_config)
