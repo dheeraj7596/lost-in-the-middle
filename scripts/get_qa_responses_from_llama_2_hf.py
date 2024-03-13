@@ -23,7 +23,7 @@ from copy import deepcopy
 
 import torch
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 from xopen import xopen
 
 sys.path.append('/data/dmekala/lost-in-the-middle/src')
@@ -34,7 +34,7 @@ from lost_in_the_middle.prompting import (
 )
 
 logger = logging.getLogger(__name__)
-random.seed(0)
+set_seed(0)
 
 
 def chunks_by_size(lst, n):
@@ -181,7 +181,7 @@ def main(
     responses = []
     for p, s in zip(prompts, raw_responses):
         print(idx)
-        ans = s.replace(model.tokenizer.eos_token, "").strip().split(p)[-1].strip()
+        ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[-1].strip()
         print("Final Pred:", ans)
         print("*" * 80)
         responses.append(ans)
