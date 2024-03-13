@@ -81,6 +81,7 @@ class ModelWrapper:
 def main(
         input_path,
         model_name,
+        bsize,
         temperature,
         top_p,
         closedbook,
@@ -164,7 +165,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name, gpu_batch_size=64)
+    model = ModelWrapper(model_name, gpu_batch_size=bsize)
     if temperature != 0:
         do_sample = True
     else:
@@ -250,6 +251,12 @@ if __name__ == "__main__":
         default=100,
     )
     parser.add_argument(
+        "--bsize",
+        help="Batch size",
+        type=int,
+        default=16,
+    )
+    parser.add_argument(
         "--max-prompt-length",
         help="Maximum number of tokens in the prompt. Longer prompts will be skipped.",
         type=int,
@@ -261,6 +268,7 @@ if __name__ == "__main__":
     main(
         args.input_path,
         args.model,
+        args.bsize,
         args.temperature,
         args.top_p,
         args.closedbook,
