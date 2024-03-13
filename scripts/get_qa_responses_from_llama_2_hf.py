@@ -23,8 +23,7 @@ from copy import deepcopy
 
 import torch
 from tqdm import tqdm
-from transformers import AutoTokenizer
-from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from xopen import xopen
 
 from lost_in_the_middle.prompting import (
@@ -37,20 +36,59 @@ logger = logging.getLogger(__name__)
 random.seed(0)
 
 
+def chunks_by_size(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i: i + n]
+
+
+class ModelWrapper:
+    def __init__(self, checkpoint, tokenizer_name=None, gpu_batch_size=16):
+        self.gpu_batch_size = gpu_batch_size
+        if tokenizer_name is None:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                checkpoint, padding_side='left', truncation_side="right")
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_name, padding_side='left', truncation_side="right")
+        if self.tokenizer.pad_token_id == None:
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        self.model = AutoModelForCausalLM.from_pretrained(checkpoint,
+                                                          torch_dtype=torch.bfloat16,
+                                                          low_cpu_mem_usage=True,
+                                                          trust_remote_code=True,
+                                                          attn_implementation="eager",
+                                                          device_map="auto")
+        self.model.eval()
+
+    def inference(self, prompts, generation_config, skip_special_tokens=False):
+        all_outputs = []
+        chunks = chunks_by_size(prompts, self.gpu_batch_size)
+        # print(f"Making {len(chunks)} chunk(s) each with size {len(chunks[0])}")
+        for batch_prompts in chunks:
+            inputs = self.tokenizer(batch_prompts, return_tensors="pt", add_special_tokens=False,
+                                    padding=True, truncation=True, max_length=4096).to("cuda")
+            print("inputs shape:", inputs.input_ids.shape)
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, **generation_config)
+                all_outputs += self.tokenizer.batch_decode(
+                    outputs, skip_special_tokens=skip_special_tokens)
+        return all_outputs
+
+
 def main(
-    input_path,
-    model_name,
-    temperature,
-    top_p,
-    closedbook,
-    prompt_mention_random_ordering,
-    use_random_ordering,
-    query_aware_contextualization,
-    num_gpus,
-    max_new_tokens,
-    max_prompt_length,
-    hf_cache_path,
-    output_path,
+        input_path,
+        model_name,
+        temperature,
+        top_p,
+        closedbook,
+        prompt_mention_random_ordering,
+        use_random_ordering,
+        query_aware_contextualization,
+        max_new_tokens,
+        max_prompt_length,
+        output_path,
 ):
     # Create directory for output path if it doesn't exist.
     pathlib.Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -125,17 +163,22 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = LLM(
-        model=model_name,
-        tensor_parallel_size=num_gpus,
-        trust_remote_code=True,
-        download_dir=hf_cache_path,
-        load_format="pt",
-        max_num_batched_tokens=max_prompt_length,
-    )
-    sampling_params = SamplingParams(temperature=temperature, top_p=top_p, max_tokens=max_new_tokens)
-    raw_responses = model.generate(prompts, sampling_params)
-    responses = [output.outputs[0].text.strip() for output in raw_responses]
+    model = ModelWrapper(model_name,gpu_batch_size=4)
+    generation_config = {
+        "temperature": temperature,
+        "max_new_tokens": max_new_tokens,
+        "do_sample": True,
+        "top_p": top_p,
+    }
+    raw_responses = model.inference(prompts, generation_config)
+    idx = 0
+    responses = []
+    for p, s in zip(prompts, raw_responses):
+        print(idx)
+        ans = s.replace(model.tokenizer.eos_token, "").strip().split(p)[-1].strip()
+        print("Final Pred:", ans)
+        print("*" * 80)
+        responses.append(ans)
 
     with xopen(output_path, "w") as f:
         for example, model_documents, prompt, response in zip(examples, all_model_documents, prompts, responses):
@@ -150,12 +193,6 @@ def main(
             output_example["model_prompt_mention_random_ordering"] = prompt_mention_random_ordering
             output_example["model_use_random_ordering"] = use_random_ordering
             f.write(json.dumps(output_example) + "\n")
-
-
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i : i + n]
 
 
 def format_chat_prompt(message: str):
@@ -179,14 +216,6 @@ if __name__ == "__main__":
         "--model",
         help="Model to use in generating responses",
         required=True,
-        choices=[
-            "meta-llama/Llama-2-7b-hf",
-            "meta-llama/Llama-2-13b-hf",
-            "meta-llama/Llama-2-70b-hf",
-            "meta-llama/Llama-2-7b-chat-hf",
-            "meta-llama/Llama-2-13b-chat-hf",
-            "meta-llama/Llama-2-70b-chat-hf",
-        ],
     )
     parser.add_argument("--temperature", help="Temperature to use in generation", type=float, default=0.0)
     parser.add_argument("--top-p", help="Top-p to use in generation", type=float, default=1.0)
@@ -208,8 +237,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Place the question both before and after the documents.",
     )
-    parser.add_argument("--num-gpus", help="Number of GPUs to use", type=int, default=1)
-    parser.add_argument("--hf-cache-path", help="Path to huggingface cache to use.")
     parser.add_argument("--output-path", help="Path to write output file of generated responses", required=True)
     parser.add_argument(
         "--max-new-tokens",
@@ -235,10 +262,8 @@ if __name__ == "__main__":
         args.prompt_mention_random_ordering,
         args.use_random_ordering,
         args.query_aware_contextualization,
-        args.num_gpus,
         args.max_new_tokens,
         args.max_prompt_length,
-        args.hf_cache_path,
         args.output_path,
     )
     logger.info("finished running %s", sys.argv[0])
