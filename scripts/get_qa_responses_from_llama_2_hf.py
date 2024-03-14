@@ -20,6 +20,8 @@ import pathlib
 import random
 import sys
 from copy import deepcopy
+from functools import partial
+from utils import modified_model_forward, modified_layer_forward
 
 import torch
 from tqdm import tqdm
@@ -44,7 +46,7 @@ def chunks_by_size(lst, n):
 
 
 class ModelWrapper:
-    def __init__(self, checkpoint, tokenizer_name=None, gpu_batch_size=16):
+    def __init__(self, checkpoint, alpha, tokenizer_name=None, gpu_batch_size=16):
         self.gpu_batch_size = gpu_batch_size
         if tokenizer_name is None:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -60,6 +62,8 @@ class ModelWrapper:
                                                           trust_remote_code=True,
                                                           attn_implementation="eager",
                                                           device_map="auto")
+        self.alpha = alpha
+        self.reweight_attn()
         self.model.eval()
 
     def inference(self, prompts, generation_config, skip_special_tokens=False):
@@ -76,6 +80,11 @@ class ModelWrapper:
                 all_outputs += self.tokenizer.batch_decode(
                     outputs, skip_special_tokens=skip_special_tokens)
         return all_outputs
+
+    def reweight_attn(self):
+        self.model.model.forward = partial(modified_model_forward, self.model.model)
+        for i, layer in enumerate(self.model.model.layers):
+            layer.forward = partial(modified_layer_forward, layer, alpha=self.alpha)
 
 
 def main(
@@ -242,6 +251,12 @@ if __name__ == "__main__":
         "--query-aware-contextualization",
         action="store_true",
         help="Place the question both before and after the documents.",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        help="Alpha to weight residual",
+        default=1.0
     )
     parser.add_argument("--output-path", help="Path to write output file of generated responses", required=True)
     parser.add_argument(
