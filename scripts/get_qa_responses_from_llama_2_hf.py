@@ -159,7 +159,8 @@ def main(
                     did_format_warn = True
                 prompt = format_chat_prompt(prompt)
 
-            prompt_length = len(tokenizer(prompt)["input_ids"])
+            # prompt_length = len(tokenizer(prompt)["input_ids"])
+            prompt_length = len(tokenizer.encode(prompt))
             if max_prompt_length < prompt_length:
                 logger.info(
                     f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "

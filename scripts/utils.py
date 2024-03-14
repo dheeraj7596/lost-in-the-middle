@@ -190,10 +190,12 @@ def modified_layer_forward(
         use_cache=use_cache,
         **kwargs,
     )
+    residual = residual.to("cuda")
+    hidden_states = hidden_states.to("cuda")
     if layer_id < layer_threshold:
         hidden_states = residual + hidden_states
     else:
-        norm_mult = torch.norm(residual + hidden_states, dim=-1)
+        norm_mult = torch.norm(residual + hidden_states, dim=-1).to("cuda")
         norm_mult = norm_mult.unsqueeze(-1).expand(-1, -1, residual.shape[-1])
         hidden_states = F.normalize(alpha * residual + hidden_states, dim=-1) * norm_mult
 
@@ -201,10 +203,12 @@ def modified_layer_forward(
     residual = hidden_states
     hidden_states = self.post_attention_layernorm(hidden_states)
     hidden_states = self.mlp(hidden_states)
+    residual = residual.to("cuda")
+    hidden_states = hidden_states.to("cuda")
     if layer_id < layer_threshold:
         hidden_states = residual + hidden_states
     else:
-        norm_mult = torch.norm(residual + hidden_states, dim=-1)
+        norm_mult = torch.norm(residual + hidden_states, dim=-1).to("cuda")
         norm_mult = norm_mult.unsqueeze(-1).expand(-1, -1, residual.shape[-1])
         hidden_states = F.normalize(alpha * residual + hidden_states, dim=-1) * norm_mult
 
