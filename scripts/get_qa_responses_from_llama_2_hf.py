@@ -91,6 +91,7 @@ def main(
         input_path,
         model_name,
         bsize,
+        debug,
         temperature,
         top_p,
         closedbook,
@@ -185,7 +186,8 @@ def main(
         "do_sample": do_sample,
         "top_p": top_p,
     }
-    # prompts = prompts[:20]
+    if debug:
+        prompts = prompts[:100]
     raw_responses = model.inference(prompts, generation_config)
     idx = 0
     responses = []
@@ -254,6 +256,11 @@ if __name__ == "__main__":
         help="Place the question both before and after the documents.",
     )
     parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="If set, runs only on 100 samples",
+    )
+    parser.add_argument(
         "--alpha",
         type=float,
         help="Alpha to weight residual",
@@ -285,6 +292,7 @@ if __name__ == "__main__":
         args.input_path,
         args.model,
         args.bsize,
+        args.debug,
         args.temperature,
         args.top_p,
         args.closedbook,
