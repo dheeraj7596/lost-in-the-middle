@@ -7,5 +7,5 @@ do
       --input-path qa_predictions/20_total_documents/layer_exps/nq-open-20_total_documents_gold_at_4-llama-2-7b-chat-hf-predictions_layeridx_${layer_index}_alpha_${alpha}.jsonl.gz \
       --output-path qa_predictions/20_total_documents/layer_exps/nq-open-20_total_documents_gold_at_4-llama-2-7b-chat-hf-predictions_layeridx_${layer_index}_alpha_${alpha}-scored.jsonl.gz
     done
-    echo "FINISHED" $layer_index
+    echo "RUNNING FINISHED" $layer_index
 done
