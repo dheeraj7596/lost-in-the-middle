@@ -185,6 +185,7 @@ def main(
         "do_sample": do_sample,
         "top_p": top_p,
     }
+    # prompts = prompts[:20]
     raw_responses = model.inference(prompts, generation_config)
     idx = 0
     responses = []

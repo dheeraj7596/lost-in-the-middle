@@ -194,7 +194,7 @@ def modified_layer_forward(
     else:
         norm_mult = torch.norm(residual + hidden_states, dim=-1)
         norm_mult = norm_mult.unsqueeze(-1).expand(-1, -1, residual.shape[-1])
-        hidden_states = F.normalize(alpha * residual + hidden_states) * norm_mult
+        hidden_states = F.normalize(alpha * residual + hidden_states, dim=-1) * norm_mult
 
     # Fully Connected
     residual = hidden_states
@@ -205,7 +205,7 @@ def modified_layer_forward(
     else:
         norm_mult = torch.norm(residual + hidden_states, dim=-1)
         norm_mult = norm_mult.unsqueeze(-1).expand(-1, -1, residual.shape[-1])
-        hidden_states = F.normalize(alpha * residual + hidden_states) * norm_mult
+        hidden_states = F.normalize(alpha * residual + hidden_states, dim=-1) * norm_mult
 
     outputs = (hidden_states,)
 
