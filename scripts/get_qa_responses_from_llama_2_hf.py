@@ -46,7 +46,7 @@ def chunks_by_size(lst, n):
 
 
 class ModelWrapper:
-    def __init__(self, checkpoint, alpha, tokenizer_name=None, gpu_batch_size=16):
+    def __init__(self, checkpoint, alpha, layer_threshold, tokenizer_name=None, gpu_batch_size=16):
         self.gpu_batch_size = gpu_batch_size
         if tokenizer_name is None:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -63,6 +63,7 @@ class ModelWrapper:
                                                           attn_implementation="eager",
                                                           device_map="auto")
         self.alpha = alpha
+        self.layer_threshold = layer_threshold
         self.reweight_attn()
         self.model.eval()
 
@@ -84,12 +85,14 @@ class ModelWrapper:
     def reweight_attn(self):
         self.model.model.forward = partial(modified_model_forward, self.model.model)
         for i, layer in enumerate(self.model.model.layers):
-            layer.forward = partial(modified_layer_forward, layer, alpha=self.alpha)
+            layer.forward = partial(modified_layer_forward, layer, layer_threshold=self.layer_threshold, alpha=self.alpha)
 
 
 def main(
         input_path,
         model_name,
+        alpha,
+        layer_threshold,
         bsize,
         debug,
         temperature,
@@ -175,7 +178,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name, alpha=args.alpha, gpu_batch_size=bsize)
+    model = ModelWrapper(model_name, alpha=alpha, layer_threshold=layer_threshold, gpu_batch_size=bsize)
     if temperature != 0:
         do_sample = True
     else:
@@ -266,6 +269,12 @@ if __name__ == "__main__":
         help="Alpha to weight residual",
         default=1.0
     )
+    parser.add_argument(
+        "--layer_threshold",
+        type=int,
+        help="Alpha to weight residual",
+        default=0
+    )
     parser.add_argument("--output-path", help="Path to write output file of generated responses", required=True)
     parser.add_argument(
         "--max-new-tokens",
@@ -291,6 +300,8 @@ if __name__ == "__main__":
     main(
         args.input_path,
         args.model,
+        args.alpha,
+        args.layer_threshold,
         args.bsize,
         args.debug,
         args.temperature,

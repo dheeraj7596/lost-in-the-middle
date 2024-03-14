@@ -152,6 +152,7 @@ def modified_layer_forward(
     past_key_value: Optional[Tuple[torch.Tensor]] = None,
     output_attentions: Optional[bool] = False,
     use_cache: Optional[bool] = False,
+    layer_threshold=None,
     layer_id=None,
     alpha=None,
     **kwargs,
@@ -189,7 +190,7 @@ def modified_layer_forward(
         use_cache=use_cache,
         **kwargs,
     )
-    if layer_id < -4:
+    if layer_id < layer_threshold:
         hidden_states = residual + hidden_states
     else:
         norm_mult = torch.norm(residual + hidden_states, dim=-1)
@@ -200,7 +201,7 @@ def modified_layer_forward(
     residual = hidden_states
     hidden_states = self.post_attention_layernorm(hidden_states)
     hidden_states = self.mlp(hidden_states)
-    if layer_id <= -4:
+    if layer_id < layer_threshold:
         hidden_states = residual + hidden_states
     else:
         norm_mult = torch.norm(residual + hidden_states, dim=-1)
