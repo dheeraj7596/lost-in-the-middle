@@ -36,7 +36,7 @@ from lost_in_the_middle.prompting import (
 )
 
 logger = logging.getLogger(__name__)
-set_seed(0)
+set_seed(42)
 
 
 def chunks_by_size(lst, n):
