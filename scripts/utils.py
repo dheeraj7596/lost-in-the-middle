@@ -205,7 +205,7 @@ def modified_layer_forward(
     hidden_states = self.mlp(hidden_states)
     residual = residual.to("cuda")
     hidden_states = hidden_states.to("cuda")
-    if layer_id < layer_threshold or layer_id == -1:
+    if layer_id < layer_threshold:
         hidden_states = residual + hidden_states
     else:
         norm_mult = torch.norm(residual + hidden_states, dim=-1).to("cuda")
