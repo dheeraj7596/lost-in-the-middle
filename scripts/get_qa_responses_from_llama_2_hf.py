@@ -36,7 +36,6 @@ from lost_in_the_middle.prompting import (
 )
 
 logger = logging.getLogger(__name__)
-set_seed(42)
 
 
 def chunks_by_size(lst, n):
@@ -276,6 +275,12 @@ if __name__ == "__main__":
         help="Alpha to weight residual",
         default=0
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        help="Seed",
+        default=42
+    )
     parser.add_argument("--output-path", help="Path to write output file of generated responses", required=True)
     parser.add_argument(
         "--max-new-tokens",
@@ -296,6 +301,7 @@ if __name__ == "__main__":
         default=4096,
     )
     args = parser.parse_args()
+    set_seed(args.seed)
 
     logger.info("running %s", " ".join(sys.argv))
     main(
