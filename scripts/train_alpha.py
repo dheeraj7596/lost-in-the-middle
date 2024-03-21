@@ -15,16 +15,18 @@
 import copy
 import logging
 from dataclasses import dataclass, field
-from models.alpha_llama_decoder_layer import AlphaLlamaForCausalLM
 from typing import Dict, Optional, Sequence
-import pickle
 
 import torch
-from torch.nn import CrossEntropyLoss
 import transformers
 from scripts import utils
 from torch.utils.data import Dataset
 from transformers import Trainer
+import sys
+
+sys.path.append('/data/dmekala/lost-in-the-middle/src')
+from lost_in_the_middle.models.alpha_llama_decoder_layer import AlphaLlamaForCausalLM
+
 
 IGNORE_INDEX = -100
 DEFAULT_PAD_TOKEN = "[PAD]"
