@@ -22,7 +22,7 @@ import pickle
 import torch
 from torch.nn import CrossEntropyLoss
 import transformers
-import utils
+from scripts import utils
 from torch.utils.data import Dataset
 from transformers import Trainer
 
@@ -202,13 +202,12 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer, dat
     return dict(train_dataset=train_dataset, eval_dataset=val_dataset, data_collator=data_collator)
 
 
-def load_model(model_name_or_path, cache_dir):
+def load_model(model_name_or_path):
     config = transformers.AutoConfig.from_pretrained(model_name_or_path)
     config._attn_implementation = "eager"
     model = AlphaLlamaForCausalLM(config=config)
     temp_model = transformers.AutoModelForCausalLM.from_pretrained(
         model_name_or_path,
-        cache_dir,
         attn_implementation="eager"
     )
     # loop through each named parameter and copy the data.
@@ -220,6 +219,14 @@ def load_model(model_name_or_path, cache_dir):
                 model.state_dict()[name].copy_(param.data)
             else:
                 print(f"Parameter '{name}' not found in the target model.")
+    for name, param in model.named_parameters():
+        if name in temp_model.state_dict():
+            param.requires_grad = False
+        else:
+            param.requires_grad = True
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            print("GRAD REQUIRED", name)
     del temp_model
     return model
 
@@ -227,7 +234,7 @@ def train():
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    model = load_model(model_args.model_name_or_path, training_args.cache_dir)
+    model = load_model(model_args.model_name_or_path)
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
