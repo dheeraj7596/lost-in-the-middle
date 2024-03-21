@@ -14,6 +14,7 @@
 
 import copy
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Sequence
 
@@ -24,6 +25,7 @@ from accelerate import init_empty_weights
 from torch.utils.data import Dataset
 from transformers import Trainer
 import sys
+import wandb
 
 sys.path.append('/data/dmekala/lost-in-the-middle/src')
 from lost_in_the_middle.models.alpha_llama_decoder_layer import AlphaLlamaForCausalLM
@@ -269,6 +271,10 @@ def train():
 
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     print("Data Module ready!")
+    wandb.init(
+        project=os.environ["WANDB_PROJECT"]
+    )
+    wandb.watch(model, log='all', log_freq=10)
     trainer = Trainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
     trainer.train()
     trainer.save_state()
