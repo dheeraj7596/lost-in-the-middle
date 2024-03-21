@@ -9,7 +9,7 @@ import warnings
 class AlphaLlamaDecoderLayer(LlamaDecoderLayer):
     def __init__(self, config, layer_idx: int):
         super().__init__(config, layer_idx)
-        self.alpha = nn.Parameter(torch.normal(mean=torch.tensor(2.0), std=torch.tensor(1.0)))
+        self.alpha = nn.Parameter(torch.normal(mean=torch.tensor(2.0), std=torch.tensor(1.0)), requires_grad=True)
 
     def forward(
             self,

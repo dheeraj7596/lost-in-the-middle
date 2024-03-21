@@ -20,7 +20,7 @@ from typing import Dict, Optional, Sequence
 import torch
 import transformers
 import utils
-from accelerate import init_empty_weights, load_checkpoint_and_dispatch
+from accelerate import init_empty_weights
 from torch.utils.data import Dataset
 from transformers import Trainer
 import sys
@@ -211,13 +211,8 @@ def load_model(model_name_or_path, initialized_weights_path):
     config._attn_implementation = "eager"
     with init_empty_weights():
         model = AlphaLlamaForCausalLM(config=config)
-    model = load_checkpoint_and_dispatch(model,
-                                         initialized_weights_path,
-                                         device_map='auto',
-                                         offload_folder="offload",
-                                         offload_state_dict=True,
-                                         dtype="bfloat16",
-                                         no_split_module_classes=["AlphaLlamaDecoderLayer"])
+    model.load_state_dict(torch.load(initialized_weights_path), assign=True)
+    model.to("cuda")
 
     temp_model = transformers.AutoModelForCausalLM.from_pretrained(
         model_name_or_path,
