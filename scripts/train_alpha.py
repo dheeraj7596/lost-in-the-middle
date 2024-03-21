@@ -19,7 +19,8 @@ from typing import Dict, Optional, Sequence
 
 import torch
 import transformers
-from scripts import utils
+import utils
+from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 from torch.utils.data import Dataset
 from transformers import Trainer
 import sys
@@ -62,6 +63,7 @@ PROMPT_DICT = {
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    initialized_weights_path: Optional[str] = field(default="facebook/opt-125m")
 
 
 @dataclass
@@ -204,10 +206,19 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer, dat
     return dict(train_dataset=train_dataset, eval_dataset=val_dataset, data_collator=data_collator)
 
 
-def load_model(model_name_or_path):
+def load_model(model_name_or_path, initialized_weights_path):
     config = transformers.AutoConfig.from_pretrained(model_name_or_path)
     config._attn_implementation = "eager"
-    model = AlphaLlamaForCausalLM(config=config)
+    with init_empty_weights():
+        model = AlphaLlamaForCausalLM(config=config)
+    model = load_checkpoint_and_dispatch(model,
+                                         initialized_weights_path,
+                                         device_map='auto',
+                                         offload_folder="offload",
+                                         offload_state_dict=True,
+                                         dtype="bfloat16",
+                                         no_split_module_classes=["AlphaLlamaDecoderLayer"])
+
     temp_model = transformers.AutoModelForCausalLM.from_pretrained(
         model_name_or_path,
         attn_implementation="eager"
@@ -236,7 +247,7 @@ def train():
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    model = load_model(model_args.model_name_or_path)
+    model = load_model(model_args.model_name_or_path, model_args.initialized_weights_path)
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
