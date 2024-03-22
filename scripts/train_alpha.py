@@ -23,10 +23,27 @@ import transformers
 import utils
 from accelerate import init_empty_weights
 from torch.utils.data import Dataset
-from transformers import Trainer
+from transformers import Trainer, TrainerCallback
 import sys
 sys.path.append('/data/dmekala/lost-in-the-middle/src')
 from lost_in_the_middle.models.alpha_llama_decoder_layer import AlphaLlamaForCausalLM
+
+class TrainsetAlphaCallback(TrainerCallback):
+    """
+    Prints alpha at the end of each step
+    """
+
+    def __init__(self, trainer):
+        super().__init__()
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if state.global_step % 10 == 0:
+            print("Step:", state.global_step)
+            model = kwargs["model"]
+            for name, param in model.named_parameters():
+                if "alpha" in name:
+                    print(name, param.data)
+            print("*" * 80)
 
 
 IGNORE_INDEX = -100
@@ -270,6 +287,7 @@ def train():
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     print("Data Module ready!")
     trainer = Trainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
+    trainer.add_callback(TrainsetAlphaCallback(trainer))
     trainer.train()
     trainer.save_state()
     trainer.save_model(output_dir=training_args.output_dir)
