@@ -19,6 +19,8 @@ import logging
 import pathlib
 import random
 import sys
+sys.path.append('/data/dmekala/lost-in-the-middle/src')
+
 from copy import deepcopy
 from functools import partial
 from lost_in_the_middle.models.alpha_llama_decoder_layer import AlphaLlamaForCausalLM
@@ -28,7 +30,6 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 from xopen import xopen
 
-sys.path.append('/data/dmekala/lost-in-the-middle/src')
 from lost_in_the_middle.prompting import (
     Document,
     get_closedbook_qa_prompt,
