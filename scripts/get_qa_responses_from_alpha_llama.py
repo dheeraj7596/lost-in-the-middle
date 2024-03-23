@@ -62,6 +62,7 @@ class ModelWrapper:
                                                            trust_remote_code=True,
                                                            attn_implementation="eager",
                                                            device_map="auto")
+        self.model.to("cuda")
         self.model.eval()
 
     def inference(self, prompts, generation_config, skip_special_tokens=False):
