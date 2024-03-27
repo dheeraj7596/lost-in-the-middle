@@ -22,6 +22,7 @@ import sys
 from copy import deepcopy
 from functools import partial
 from utils import modified_model_forward, modified_layer_forward
+from datasets import load_dataset, load_metric
 
 import torch
 from tqdm import tqdm
@@ -42,6 +43,20 @@ def chunks_by_size(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i: i + n]
+
+
+def print_results(gts, preds):
+    metric = load_metric("rouge")
+    metric_results = metric.compute(
+        predictions=preds, references=gts, use_stemmer=True
+    )
+    score_keys = ["rouge1", "rouge2", "rougeL", "rougeLsum"]
+    for rouge_type in score_keys:
+        rouge_score = metric_results[rouge_type].mid.fmeasure
+        print(f"rouge_{rouge_type}:", rouge_score)
+    metric = load_metric("meteor")
+    score = metric.compute(predictions=preds, references=gts)["meteor"]
+    print("meteor:", score)
 
 
 class ModelWrapper:
@@ -84,11 +99,11 @@ class ModelWrapper:
     def reweight_attn(self):
         self.model.model.forward = partial(modified_model_forward, self.model.model)
         for i, layer in enumerate(self.model.model.layers):
-            layer.forward = partial(modified_layer_forward, layer, layer_threshold=self.layer_threshold, alpha=self.alpha)
+            layer.forward = partial(modified_layer_forward, layer, layer_threshold=self.layer_threshold,
+                                    alpha=self.alpha)
 
 
 def main(
-        input_path,
         model_name,
         alpha,
         layer_threshold,
@@ -96,10 +111,6 @@ def main(
         debug,
         temperature,
         top_p,
-        closedbook,
-        prompt_mention_random_ordering,
-        use_random_ordering,
-        query_aware_contextualization,
         max_new_tokens,
         max_prompt_length,
         output_path,
@@ -114,62 +125,36 @@ def main(
 
     examples = []
     prompts = []
-    all_model_documents = []
     did_format_warn = False
 
+    dataset = load_dataset("cnn_dailymail", '3.0.0')
+    test_dataset = dataset["test"]
+    gt_summaries = []
+
     # Fetch all of the prompts
-    with xopen(input_path) as fin:
-        for line in tqdm(fin):
-            input_example = json.loads(line)
-            # Get the prediction for the input example
-            question = input_example["question"]
-            if closedbook:
-                documents = []
-            else:
-                documents = []
-                for ctx in deepcopy(input_example["ctxs"]):
-                    documents.append(Document.from_dict(ctx))
-                if not documents:
-                    raise ValueError(f"Did not find any documents for example: {input_example}")
+    for input_example in tqdm(test_dataset):
+        text = input_example["article"]
+        summary = input_example["highlights"]
+        prompt = get_prompt(text)
 
-            if use_random_ordering:
-                # Randomly order only the distractors (isgold is False), keeping isgold documents
-                # at their existing index.
-                (original_gold_index,) = [idx for idx, doc in enumerate(documents) if doc.isgold is True]
-                original_gold_document = documents[original_gold_index]
-                distractors = [doc for doc in documents if doc.isgold is False]
-                random.shuffle(distractors)
-                distractors.insert(original_gold_index, original_gold_document)
-                documents = distractors
+        if "chat" in model_name:
+            if did_format_warn is False:
+                logger.warning(f"Model {model_name} appears to be an chat model, applying chat formatting")
+                did_format_warn = True
+            prompt = format_chat_prompt(prompt)
 
-            if closedbook:
-                prompt = get_closedbook_qa_prompt(question)
-            else:
-                prompt = get_qa_prompt(
-                    question,
-                    documents,
-                    mention_random_ordering=prompt_mention_random_ordering,
-                    query_aware_contextualization=query_aware_contextualization,
-                )
+        # prompt_length = len(tokenizer(prompt)["input_ids"])
+        prompt_length = len(tokenizer.encode(prompt))
+        if max_prompt_length < prompt_length:
+            logger.info(
+                f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
+                f"is greater than maximum prompt length {max_prompt_length}"
+            )
+            continue
 
-            if "chat" in model_name:
-                if did_format_warn is False:
-                    logger.warning(f"Model {model_name} appears to be an chat model, applying chat formatting")
-                    did_format_warn = True
-                prompt = format_chat_prompt(prompt)
-
-            # prompt_length = len(tokenizer(prompt)["input_ids"])
-            prompt_length = len(tokenizer.encode(prompt))
-            if max_prompt_length < prompt_length:
-                logger.info(
-                    f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
-                    f"is greater than maximum prompt length {max_prompt_length}"
-                )
-                continue
-
-            prompts.append(prompt)
-            examples.append(deepcopy(input_example))
-            all_model_documents.append(documents)
+        prompts.append(prompt)
+        examples.append(deepcopy(input_example))
+        gt_summaries.append(summary)
 
     logger.info(f"Loaded {len(prompts)} prompts to process")
 
@@ -196,25 +181,32 @@ def main(
     responses = []
     for p, s in zip(prompts, raw_responses):
         print(idx)
-        ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[-1].strip()
+        ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[
+            -1].strip()
         print("Final Pred:", ans)
         print("*" * 80)
         responses.append(ans)
 
     with xopen(output_path, "w") as f:
-        for example, model_documents, prompt, response in zip(examples, all_model_documents, prompts, responses):
+        for example, prompt, response in zip(examples, prompts, responses):
             output_example = deepcopy(example)
             # Add some extra metadata to the output example
             output_example["model_prompt"] = prompt
-            output_example["model_documents"] = [dataclasses.asdict(document) for document in model_documents]
             output_example["model_answer"] = response
             output_example["model"] = model_name
             output_example["model_temperature"] = temperature
             output_example["model_top_p"] = top_p
-            output_example["model_prompt_mention_random_ordering"] = prompt_mention_random_ordering
-            output_example["model_use_random_ordering"] = use_random_ordering
             f.write(json.dumps(output_example) + "\n")
 
+    print_results(gt_summaries, responses)
+
+
+def get_prompt(text):
+    return f"""Summarize this news article.
+
+{text}
+
+"""
 
 def format_chat_prompt(message: str):
     DEFAULT_SYSTEM_PROMPT = (
@@ -232,7 +224,6 @@ def format_chat_prompt(message: str):
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(module)s - %(levelname)s - %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-path", help="Path to data with questions and documents to use.", required=True)
     parser.add_argument(
         "--model",
         help="Model to use in generating responses",
@@ -240,24 +231,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--temperature", help="Temperature to use in generation", type=float, default=0.0)
     parser.add_argument("--top-p", help="Top-p to use in generation", type=float, default=1.0)
-    parser.add_argument(
-        "--closedbook", action="store_true", help="Run the model in closed-book mode (i.e., don't use documents)."
-    )
-    parser.add_argument(
-        "--prompt-mention-random-ordering",
-        action="store_true",
-        help="Mention that search results are ordered randomly in the prompt",
-    )
-    parser.add_argument(
-        "--use-random-ordering",
-        action="store_true",
-        help="Randomize the ordering of the distractors, rather than sorting by relevance.",
-    )
-    parser.add_argument(
-        "--query-aware-contextualization",
-        action="store_true",
-        help="Place the question both before and after the documents.",
-    )
     parser.add_argument(
         "--debug",
         action="store_true",
@@ -305,7 +278,6 @@ if __name__ == "__main__":
 
     logger.info("running %s", " ".join(sys.argv))
     main(
-        args.input_path,
         args.model,
         args.alpha,
         args.layer_threshold,
@@ -313,10 +285,6 @@ if __name__ == "__main__":
         args.debug,
         args.temperature,
         args.top_p,
-        args.closedbook,
-        args.prompt_mention_random_ordering,
-        args.use_random_ordering,
-        args.query_aware_contextualization,
         args.max_new_tokens,
         args.max_prompt_length,
         args.output_path,
