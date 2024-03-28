@@ -22,7 +22,8 @@ import sys
 from copy import deepcopy
 from functools import partial
 from utils import modified_model_forward, modified_layer_forward
-from datasets import load_dataset, load_metric
+from datasets import load_dataset
+from sklearn.metrics import accuracy_score
 
 import torch
 from tqdm import tqdm
@@ -46,17 +47,15 @@ def chunks_by_size(lst, n):
 
 
 def print_results(gts, preds):
-    metric = load_metric("rouge")
-    metric_results = metric.compute(
-        predictions=preds, references=gts, use_stemmer=True
-    )
-    score_keys = ["rouge1", "rouge2", "rougeL", "rougeLsum"]
-    for rouge_type in score_keys:
-        rouge_score = metric_results[rouge_type].mid.fmeasure
-        print(f"rouge_{rouge_type}:", rouge_score)
-    metric = load_metric("meteor")
-    score = metric.compute(predictions=preds, references=gts)["meteor"]
-    print("meteor:", score)
+    final_preds = []
+    for p in preds:
+        if "true" in p.lower():
+            final_preds.append(True)
+        elif "false" in p.lower():
+            final_preds.append(False)
+        else:
+            final_preds.append("none")
+    print("Accuracy:", accuracy_score(gts, final_preds))
 
 
 class ModelWrapper:
@@ -127,15 +126,16 @@ def main(
     prompts = []
     did_format_warn = False
 
-    dataset = load_dataset("cnn_dailymail", '3.0.0')
-    test_dataset = dataset["test"]
-    gt_summaries = []
+    dataset = load_dataset("google/boolq")
+    test_dataset = dataset["validation"]
+    gts = []
 
     # Fetch all of the prompts
     for input_example in tqdm(test_dataset):
-        text = input_example["article"]
-        summary = input_example["highlights"]
-        prompt = get_prompt(text)
+        text = input_example["passage"]
+        question = input_example["question"]
+        answer = input_example["answer"]
+        prompt = get_prompt(text, question)
 
         if "chat" in model_name:
             if did_format_warn is False:
@@ -154,7 +154,7 @@ def main(
 
         prompts.append(prompt)
         examples.append(deepcopy(input_example))
-        gt_summaries.append(summary)
+        gts.append(answer)
 
     logger.info(f"Loaded {len(prompts)} prompts to process")
 
@@ -198,15 +198,18 @@ def main(
             output_example["model_top_p"] = top_p
             f.write(json.dumps(output_example) + "\n")
 
-    print_results(gt_summaries, responses)
+    print_results(gts, responses)
 
 
-def get_prompt(text):
-    return f"""Summarize this news article.
+def get_prompt(text, question):
+    return f"""Answer only true or false for the given question based only on the provided passage.
 
 {text}
 
+Question: {question}
+
 """
+
 
 def format_chat_prompt(message: str):
     DEFAULT_SYSTEM_PROMPT = (
