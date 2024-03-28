@@ -47,15 +47,16 @@ def chunks_by_size(lst, n):
 
 
 def print_results(gts, preds):
+    final_gts = [str(g) for g in gts]
     final_preds = []
     for p in preds:
         if "true" in p.lower():
-            final_preds.append(True)
+            final_preds.append("True")
         elif "false" in p.lower():
-            final_preds.append(False)
+            final_preds.append("False")
         else:
             final_preds.append("none")
-    print("Accuracy:", accuracy_score(gts, final_preds))
+    print("Accuracy:", accuracy_score(final_gts, final_preds))
 
 
 class ModelWrapper:
@@ -185,6 +186,7 @@ def main(
             -1].strip()
         print("Final Pred:", ans)
         print("*" * 80)
+        idx += 1
         responses.append(ans)
 
     with xopen(output_path, "w") as f:
