@@ -153,7 +153,7 @@ def main(
     for i, sample in enumerate(test_dataset):
         ans = responses[i]
         sample["output"] = ans
-        sample["generator"] = model_name
+        sample["generator"] = model_name + "_" + "_".join(["temperature", str(temperature), "alpha", str(alpha)])
         output_json.append(sample)
 
     with open(output_path, "w") as outfile:
@@ -174,7 +174,8 @@ def format_chat_prompt(message: str):
         "why instead of answering something not correct. If you don't know the answer "
         "to a question, please don't share false information."
     )
-    lines = ["<s>[INST] <<SYS>>", DEFAULT_SYSTEM_PROMPT, "<</SYS>>", "", f"{message} [/INST]"]
+    # lines = ["<s>[INST] <<SYS>>", DEFAULT_SYSTEM_PROMPT, "<</SYS>>", "", f"{message} [/INST]"]
+    lines = ["<s>[INST] ", "", f"{message} [/INST]"]
     return "\n".join(lines)
 
 
