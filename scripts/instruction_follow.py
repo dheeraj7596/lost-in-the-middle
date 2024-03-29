@@ -161,10 +161,7 @@ def main(
 
 
 def get_prompt(text):
-    return f"""
-
-{text}
-
+    return f"""{text}
 """
 
 
