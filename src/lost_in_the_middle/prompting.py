@@ -61,6 +61,33 @@ def get_qa_prompt(
     return prompt_template.format(question=question, search_results="\n".join(formatted_documents))
 
 
+def get_qa_prompt_with_task(
+    question: str, documents: List[Document], task:str
+):
+    if not question:
+        raise ValueError(f"Provided `question` must be truthy, got: {question}")
+    if not documents:
+        raise ValueError(f"Provided `documents` must be truthy, got: {documents}")
+
+    if task is None:
+        prompt_filename = "qa.prompt"
+    elif task == "fever":
+        prompt_filename = "qa.prompt"
+    elif task == "arc_c":
+        prompt_filename = "qa.prompt"
+    else:
+        raise ValueError(f"Unknown task found: {task}")
+
+    with open(PROMPTS_ROOT / prompt_filename) as f:
+        prompt_template = f.read().rstrip("\n")
+
+    # Format the documents into strings
+    formatted_documents = []
+    for document_index, document in enumerate(documents):
+        formatted_documents.append(f"Document [{document_index+1}](Title: {document.title}) {document.text}")
+    return prompt_template.format(question=question, search_results="\n".join(formatted_documents))
+
+
 def get_closedbook_qa_prompt(question: str):
     if not question:
         raise ValueError(f"Provided `question` must be truthy, got: {question}")
