@@ -260,7 +260,7 @@ if __name__ == "__main__":
         action="store_true",
         help="If set, runs only on 100 samples",
     )
-    parser.add_argument('--top_n', type=int, default=1,
+    parser.add_argument('--ndocs', type=int, default=1,
                         help="number of paragraphs to be considered.")
     parser.add_argument('--metric', type=str)
     parser.add_argument("--choices", type=str, default=None,
@@ -311,7 +311,7 @@ if __name__ == "__main__":
         args.input_path,
         args.task,
         args.metric,
-        args.top_n,
+        args.ndocs,
         args.model,
         args.alpha,
         args.layer_threshold,
