@@ -17,14 +17,16 @@ import dataclasses
 import json
 import logging
 import pathlib
-import random
 import sys
+sys.path.append('/data/dmekala/lost-in-the-middle')
+
 from copy import deepcopy
 from functools import partial
 
 import numpy as np
 
-from scripts.utils import modified_model_forward, modified_layer_forward, load_file, postprocess_answers_closed
+from scripts.utils import modified_model_forward, modified_layer_forward
+from ret_aug.utils import load_file, postprocess_answers_closed
 from ret_aug.metrics import metric_max_over_ground_truths, exact_match_score, match
 import ast
 import torch
