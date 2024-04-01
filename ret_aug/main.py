@@ -191,6 +191,7 @@ def main(
         print("Final Pred:", ans)
         print("*" * 80)
         responses.append(ans)
+        idx += 1
 
     for item in examples:
         if "golds" not in item:
