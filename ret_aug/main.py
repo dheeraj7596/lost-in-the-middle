@@ -24,9 +24,8 @@ from functools import partial
 
 import numpy as np
 
-from utils import modified_model_forward, modified_layer_forward
-from scripts.ret_aug.utils import load_file, TASK_INST, PROMPT_DICT, save_file_jsonl, process_arc_instruction, postprocess_answers_closed
-from scripts.ret_aug.metrics import metric_max_over_ground_truths, exact_match_score, match
+from scripts.utils import modified_model_forward, modified_layer_forward, load_file, postprocess_answers_closed
+from ret_aug.metrics import metric_max_over_ground_truths, exact_match_score, match
 import ast
 import torch
 from tqdm import tqdm
