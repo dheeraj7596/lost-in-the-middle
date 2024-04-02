@@ -72,7 +72,7 @@ def get_qa_prompt_with_task(
     if task is None:
         prompt_filename = "qa.prompt"
     elif task == "fever":
-        prompt_filename = "qa.prompt"
+        prompt_filename = "fever.prompt"
     elif task == "arc_c":
         prompt_filename = "qa.prompt"
     else:
