@@ -100,6 +100,7 @@ def reformat(prompt, task):
 
 
 def post_process(ans, task):
+    ans = ans.lower()
     global tasks
     if task == tasks[0]:
         if "good" in ans:
