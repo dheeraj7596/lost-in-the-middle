@@ -182,7 +182,7 @@ def main(
             continue
 
         prompts.append(prompt)
-        examples.append(deepcopy(input_example))
+        examples.append(deepcopy(dict(input_example)))
         gts.append(label)
 
     logger.info(f"Loaded {len(prompts)} prompts to process")
