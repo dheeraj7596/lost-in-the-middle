@@ -41,6 +41,7 @@ def chunks_by_size(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i: i + n]
 
+tasks = ['Reviewer_Opinion_bad_good_choices', 'Text_Expressed_Sentiment', 'Movie_Expressed_Sentiment']
 
 class ModelWrapper:
     def __init__(self, checkpoint, alpha, layer_threshold, tokenizer_name=None, gpu_batch_size=16):
@@ -87,7 +88,7 @@ class ModelWrapper:
 
 
 def reformat(prompt, task):
-    tasks = ['Reviewer Opinion bad good choices', 'Text Expressed Sentiment', 'Movie Expressed Sentiment']
+    global tasks
     if task == tasks[0]:
         return "\n".join(["The answer candidates are good and bad. Choose one of these two.", "", prompt])
     elif task == tasks[1]:
@@ -99,7 +100,7 @@ def reformat(prompt, task):
 
 
 def post_process(ans, task):
-    tasks = ['Reviewer Opinion bad good choices', 'Text Expressed Sentiment', 'Movie Expressed Sentiment']
+    global tasks
     if task == tasks[0]:
         if "good" in ans:
             return "good"
