@@ -205,6 +205,8 @@ def main(
     }
     if debug:
         prompts = prompts[:100]
+        examples = examples[:100]
+        gts = gts[:100]
     raw_responses = model.inference(prompts, generation_config)
     idx = 0
     responses = []
