@@ -155,7 +155,7 @@ def main(
     for t in tasks:
         if t in input_path:
             task = t
-        break
+            break
     assert task is not None
     gts = []
     for i, input_example in df.iterrows():
