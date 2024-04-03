@@ -136,6 +136,7 @@ def main(
         max_prompt_length,
         output_path,
 ):
+    global tasks
     # Create directory for output path if it doesn't exist.
     pathlib.Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -150,7 +151,6 @@ def main(
 
     # Fetch all of the prompts
     df = pd.read_csv(input_path)
-    tasks = ['Reviewer Opinion bad good choices', 'Text Expressed Sentiment', 'Movie Expressed Sentiment']
     task = None
     for t in tasks:
         if t in input_path:
