@@ -186,7 +186,10 @@ def main(
         print(idx)
         ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[
             -1]
-        pred = int(ans.split("\n")[0].strip())
+        try:
+            pred = int(ans.split("\n")[0].strip())
+        except:
+            pred = -1
         print("Final Pred:", pred)
         print("GT:", gts[idx])
         print("*" * 80)
