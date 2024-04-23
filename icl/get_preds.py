@@ -117,16 +117,16 @@ Label: 2
 Text: Thunderbird well worth a test flight Many people don #39;t pay all that much attention to their e-mail software. After all, it takes a real geek to care about the fine points of one program or another, especially when they all do more or less the same thing.
 Label: 3
 ###
-Text: Scant Progress on Post-Kyoto as Climate Talks End (Reuters) Reuters - U.N. talks on climate\change ended early Saturday with few steps forward as the\United States, oil producers and developing giants slammed the\brakes on the European Union's drive for deeper emissions cuts\to stop global warming.
+Text: Scant Progress on Post-Kyoto as Climate Talks End (Reuters) Reuters - U.N. talks on climate change ended early Saturday with few steps forward as the United States, oil producers and developing giants slammed the\brakes on the European Union's drive for deeper emissions cuts to stop global warming.
 Label: 0
 ###
 Text: Surprise! Ratner #39;s team can play to win It remains to be seen whether the Nets are as good with Vince Carter as they once were with Kenyon Martin, but at least they have made winning a priority again over in the Meadowlands.
 Label: 1
 ###
-Text: Murdoch offers \$44 million for Manhattan penthouse MUMBAI: Media moghul and billionaire chairman of News Corp Rupert Murdoch has, according to agency reports, offered to buy a penthouse in New York #39;s upscale Manhattan area for cool \$44 million.
+Text: Murdoch offers $44 million for Manhattan penthouse MUMBAI: Media moghul and billionaire chairman of News Corp Rupert Murdoch has, according to agency reports, offered to buy a penthouse in New York #39;s upscale Manhattan area for cool $44 million.
 Label: 2
 ###
-Text: OSDL Looks Under the Sofa Cushions for Signs of Linux Growth The Open Source Development Labs has gone into the soothsayer business and - based on research that it had IDC run up - says that the global Linux market will be worth \$35.7 billion in 2008.
+Text: OSDL Looks Under the Sofa Cushions for Signs of Linux Growth The Open Source Development Labs has gone into the soothsayer business and - based on research that it had IDC run up - says that the global Linux market will be worth $35.7 billion in 2008.
 Label: 3
 ###
 Text: {text}
