@@ -111,7 +111,7 @@ Label: 0
 Text: Texas' Johnson, Benson Go Out With Win (AP) AP - Their final games will be remembered for the plays others made. Still, Texas tailback Cedric Benson and linebacker Derrick Johnson went out the way they wanted to: with a Rose Bowl win.
 Label: 1
 ###
-Text: Wall St. Bears Claw Back Into the Black (Reuters) Reuters - Short-sellers, Wall Street's dwindling\band of ultra-cynics, are seeing green again.
+Text: Wall St. Bears Claw Back Into the Black (Reuters) Reuters - Short-sellers, Wall Street's dwindling band of ultra-cynics, are seeing green again.
 Label: 2
 ###
 Text: Thunderbird well worth a test flight Many people don #39;t pay all that much attention to their e-mail software. After all, it takes a real geek to care about the fine points of one program or another, especially when they all do more or less the same thing.
