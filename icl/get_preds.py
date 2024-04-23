@@ -175,12 +175,27 @@ def post_process(dataset_name, ans):
             pred = -1
     elif dataset_name == "gsm8k":
         try:
-            pred = ans.split("####")[-1].strip()
+            pred = ans.split("####")[1].strip().split("\n")[0].strip()
         except:
             pred = -1
     else:
         raise Exception("unknown dataset")
     return pred
+
+
+def get_accuracy(dataset_name, gts, preds):
+    if dataset_name != "gsm8k":
+        return accuracy_score(gts, preds)
+    else:
+        accuracy = 0
+        correct = []
+        for p, g in zip(preds, gts):
+            if p == g:
+                accuracy += 1
+                correct.append(1)
+            else:
+                correct.append(0)
+        return accuracy / len(correct)
 
 
 def main(
@@ -249,7 +264,7 @@ def main(
         responses.append(ans)
         idx += 1
 
-    print("Accuracy:", accuracy_score(gts, preds))
+    print("Accuracy:", get_accuracy(dataset_name, gts, preds))
 
     with xopen(output_path, "w") as f:
         for example, prompt, response in zip(examples, prompts, responses):
