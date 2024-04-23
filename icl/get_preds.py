@@ -87,7 +87,7 @@ class ModelWrapper:
                                     alpha=self.alpha)
 
 
-def reformat(dataset_name, text=None, sent1=None, sent2=None):
+def reformat(dataset_name, text=None, sent1=None, sent2=None, question=None):
     if dataset_name == "rotten_tomatoes":
         prompt_format = """<s>Text: compassionately explores the seemingly irreconcilable situation between conservative christian parents and their estranged gay and lesbian children .
 Label: 1
@@ -153,6 +153,16 @@ Sentence1: {sent1}
 Sentence2: {sent2}
 Label:"""
         return prompt_format.format_map({"sent1": sent1, "sent2": sent2})
+    elif dataset_name == "gsm8k":
+        prompt_format = f"""<s>Question: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?
+Answer: Natalia sold 48/2 = <<48/2=24>>24 clips in May.\nNatalia sold 48+24 = <<48+24=72>>72 clips altogether in April and May.\n#### 72
+###
+Question: Weng earns $12 an hour for babysitting. Yesterday, she just did 50 minutes of babysitting. How much did she earn?
+Answer: Weng earns 12/60 = $<<12/60=0.2>>0.2 per minute.\nWorking 50 minutes, she earned 0.2 x 50 = $<<0.2*50=10>>10.\n#### 10
+###
+Question: {question}
+Answer:"""
+        return prompt_format.format_map({"question": question})
     else:
         raise Exception("unknown dataset")
 
@@ -161,6 +171,11 @@ def post_process(dataset_name, ans):
     if dataset_name == "rotten_tomatoes" or dataset_name == "rte" or dataset_name == "ag_news":
         try:
             pred = int(ans.split("\n")[0].strip())
+        except:
+            pred = -1
+    elif dataset_name == "gsm8k":
+        try:
+            pred = int(ans.split("####")[-1].strip())
         except:
             pred = -1
     else:
@@ -309,6 +324,23 @@ def get_data(dataset_name, max_prompt_length, tokenizer):
             prompts.append(prompt)
             examples.append(deepcopy(dict(input_example)))
             gts.append(label)
+    elif dataset_name == "gsm8k":
+        df = load_dataset("gsm8k", 'main', split="test")
+        for input_example in df:
+            question = input_example["question"]
+            answer = input_example["answer"].split("####")[-1].strip()
+            prompt = reformat(dataset_name, question=question)
+            # prompt_length = len(tokenizer(prompt)["input_ids"])
+            prompt_length = len(tokenizer.encode(prompt))
+            if max_prompt_length < prompt_length:
+                logger.info(
+                    f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
+                    f"is greater than maximum prompt length {max_prompt_length}"
+                )
+                continue
+            prompts.append(prompt)
+            examples.append(deepcopy(dict(input_example)))
+            gts.append(int(answer))
     else:
         raise Exception("unknown dataset")
     return examples, gts, prompts
