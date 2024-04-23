@@ -175,7 +175,7 @@ def post_process(dataset_name, ans):
             pred = -1
     elif dataset_name == "gsm8k":
         try:
-            pred = int(ans.split("####")[-1].strip())
+            pred = ans.split("####")[-1].strip()
         except:
             pred = -1
     else:
@@ -340,7 +340,7 @@ def get_data(dataset_name, max_prompt_length, tokenizer):
                 continue
             prompts.append(prompt)
             examples.append(deepcopy(dict(input_example)))
-            gts.append(int(answer))
+            gts.append(answer)
     else:
         raise Exception("unknown dataset")
     return examples, gts, prompts
