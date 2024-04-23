@@ -186,11 +186,13 @@ def main(
         print(idx)
         ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[
             -1]
-        pred = ans.split("\n")[0].strip()
+        pred = int(ans.split("\n")[0].strip())
         print("Final Pred:", pred)
+        print("GT:", gts[idx])
         print("*" * 80)
         preds.append(pred)
         responses.append(ans)
+        idx += 1
 
     print("Accuracy:", accuracy_score(gts, preds))
 
@@ -224,7 +226,7 @@ def format_chat_prompt(message: str):
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(module)s - %(levelname)s - %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-path", help="Path to data with questions and documents to use.", required=True)
+    # parser.add_argument("--input-path", help="Path to data with questions and documents to use.", required=True)
     parser.add_argument(
         "--model",
         help="Model to use in generating responses",
@@ -297,7 +299,7 @@ if __name__ == "__main__":
 
     logger.info("running %s", " ".join(sys.argv))
     main(
-        args.input_path,
+        # args.input_path,
         args.model,
         args.alpha,
         args.layer_threshold,
