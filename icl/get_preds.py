@@ -87,8 +87,9 @@ class ModelWrapper:
                                     alpha=self.alpha)
 
 
-def reformat(text):
-    prompt_format = """<s>Text: compassionately explores the seemingly irreconcilable situation between conservative christian parents and their estranged gay and lesbian children .
+def reformat(dataset_name, text=None, sent1=None, sent2=None):
+    if dataset_name == "rotten_tomatoes":
+        prompt_format = """<s>Text: compassionately explores the seemingly irreconcilable situation between conservative christian parents and their estranged gay and lesbian children .
 Label: 1
 ###
 Text: sunk by way too much indulgence of scene-chewing , teeth-gnashing actorliness .
@@ -102,10 +103,73 @@ Label: 0
 ###
 Text: {text}
 Label:"""
-    return prompt_format.format_map({"text": text})
+        return prompt_format.format_map({"text": text})
+    elif dataset_name == "ag_news":
+        prompt_format = """<s>Text: Talks End With No U.S. Climate Deal A U.N. conference ended early Saturday with a vague plan for informal new talks on how to slow global warming but without a U.S. commitment to multilateral negotiations on next steps, including emissions controls.
+Label: 0
+###
+Text: Texas' Johnson, Benson Go Out With Win (AP) AP - Their final games will be remembered for the plays others made. Still, Texas tailback Cedric Benson and linebacker Derrick Johnson went out the way they wanted to: with a Rose Bowl win.
+Label: 1
+###
+Text: Wall St. Bears Claw Back Into the Black (Reuters) Reuters - Short-sellers, Wall Street's dwindling\band of ultra-cynics, are seeing green again.
+Label: 2
+###
+Text: Thunderbird well worth a test flight Many people don #39;t pay all that much attention to their e-mail software. After all, it takes a real geek to care about the fine points of one program or another, especially when they all do more or less the same thing.
+Label: 3
+###
+Text: Scant Progress on Post-Kyoto as Climate Talks End (Reuters) Reuters - U.N. talks on climate\change ended early Saturday with few steps forward as the\United States, oil producers and developing giants slammed the\brakes on the European Union's drive for deeper emissions cuts\to stop global warming.
+Label: 0
+###
+Text: Surprise! Ratner #39;s team can play to win It remains to be seen whether the Nets are as good with Vince Carter as they once were with Kenyon Martin, but at least they have made winning a priority again over in the Meadowlands.
+Label: 1
+###
+Text: Murdoch offers \$44 million for Manhattan penthouse MUMBAI: Media moghul and billionaire chairman of News Corp Rupert Murdoch has, according to agency reports, offered to buy a penthouse in New York #39;s upscale Manhattan area for cool \$44 million.
+Label: 2
+###
+Text: OSDL Looks Under the Sofa Cushions for Signs of Linux Growth The Open Source Development Labs has gone into the soothsayer business and - based on research that it had IDC run up - says that the global Linux market will be worth \$35.7 billion in 2008.
+Label: 3
+###
+Text: {text}
+Label:"""
+        return prompt_format.format_map({"text": text})
+    elif dataset_name == "rte":
+        prompt_format = """<s>Sentence1: Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.
+Sentence2: Christopher Reeve had an accident.
+Label: 1
+###
+Sentence1: Yet, we now are discovering that antibiotics are losing their effectiveness against illness. Disease-causing bacteria are mutating faster than we can come up with new antibiotics to fight the new variations.
+Sentence2: Bacteria is winning the war against antibiotics.
+Label: 0
+###
+Sentence1: Cairo is now home to some 15 million people - a burgeoning population that produces approximately 10,000 tonnes of rubbish per day, putting an enormous strain on public services. In the past 10 years, the government has tried hard to encourage private investment in the refuse sector, but some estimate 4,000 tonnes of waste is left behind every day, festering in the heat as it waits for someone to clear it up. It is often the people in the poorest neighbourhoods that are worst affected. But in some areas they are fighting back. In Shubra, one of the northern districts of the city, the residents have taken to the streets armed with dustpans and brushes to clean up public areas which have been used as public dumps.
+Sentence2: 15 million tonnes of rubbish are produced daily in Cairo.
+Label: 1
+###
+Sentence1: In 1979, the leaders signed the Egypt-Israel peace treaty on the White House lawn. Both President Begin and Sadat received the Nobel Peace Prize for their work. The two nations have enjoyed peaceful relations to this day.
+Sentence2: The Israel-Egypt Peace Agreement was signed in 1979.
+Label: 0
+###
+Sentence1: {sent1}
+Sentence2: {sent2}
+Label:"""
+        return prompt_format.format_map({"sent1": sent1, "sent2": sent2})
+    else:
+        raise Exception("unknown dataset")
+
+
+def post_process(dataset_name, ans):
+    if dataset_name == "rotten_tomatoes" or dataset_name == "rte" or dataset_name == "ag_news":
+        try:
+            pred = int(ans.split("\n")[0].strip())
+        except:
+            pred = -1
+    else:
+        raise Exception("unknown dataset")
+    return pred
 
 
 def main(
+        dataset_name,
         model_name,
         alpha,
         layer_threshold,
@@ -130,31 +194,7 @@ def main(
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token  # to avoid an error
 
-    examples = []
-    prompts = []
-    did_format_warn = False
-
-    # Fetch all of the prompts
-    df = load_dataset("rotten_tomatoes", split="test")
-    gts = []
-    for input_example in df:
-        # Get the prediction for the input example
-        text = input_example["text"]
-        label = input_example["label"]
-        prompt = reformat(text)
-
-        # prompt_length = len(tokenizer(prompt)["input_ids"])
-        prompt_length = len(tokenizer.encode(prompt))
-        if max_prompt_length < prompt_length:
-            logger.info(
-                f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
-                f"is greater than maximum prompt length {max_prompt_length}"
-            )
-            continue
-
-        prompts.append(prompt)
-        examples.append(deepcopy(dict(input_example)))
-        gts.append(label)
+    examples, gts, prompts = get_data(dataset_name, max_prompt_length, tokenizer)
 
     logger.info(f"Loaded {len(prompts)} prompts to process")
 
@@ -186,10 +226,7 @@ def main(
         print(idx)
         ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[
             -1]
-        try:
-            pred = int(ans.split("\n")[0].strip())
-        except:
-            pred = -1
+        pred = post_process(dataset_name, ans)
         print("Final Pred:", pred)
         print("GT:", gts[idx])
         print("*" * 80)
@@ -213,6 +250,70 @@ def main(
             f.write(json.dumps(output_example) + "\n")
 
 
+def get_data(dataset_name, max_prompt_length, tokenizer):
+    examples = []
+    prompts = []
+    gts = []
+    # Fetch all of the prompts
+    if dataset_name == "rotten_tomatoes":
+        df = load_dataset("rotten_tomatoes", split="test")
+        for input_example in df:
+            # Get the prediction for the input example
+            text = input_example["text"]
+            label = input_example["label"]
+            prompt = reformat(dataset_name, text=text)
+            # prompt_length = len(tokenizer(prompt)["input_ids"])
+            prompt_length = len(tokenizer.encode(prompt))
+            if max_prompt_length < prompt_length:
+                logger.info(
+                    f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
+                    f"is greater than maximum prompt length {max_prompt_length}"
+                )
+                continue
+            prompts.append(prompt)
+            examples.append(deepcopy(dict(input_example)))
+            gts.append(label)
+    elif dataset_name == "ag_news":
+        df = load_dataset("ag_news", split="test")
+        for input_example in df:
+            # Get the prediction for the input example
+            text = input_example["text"]
+            label = input_example["label"]
+            prompt = reformat(dataset_name, text=text)
+            # prompt_length = len(tokenizer(prompt)["input_ids"])
+            prompt_length = len(tokenizer.encode(prompt))
+            if max_prompt_length < prompt_length:
+                logger.info(
+                    f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
+                    f"is greater than maximum prompt length {max_prompt_length}"
+                )
+                continue
+            prompts.append(prompt)
+            examples.append(deepcopy(dict(input_example)))
+            gts.append(label)
+    elif dataset_name == "rte":
+        df = load_dataset("nyu-mll/glue", "rte", split="test")
+        for input_example in df:
+            sent1 = input_example["sentence1"]
+            sent2 = input_example["sentence2"]
+            label = input_example["label"]
+            prompt = reformat(dataset_name, sent1=sent1, sent2=sent2)
+            # prompt_length = len(tokenizer(prompt)["input_ids"])
+            prompt_length = len(tokenizer.encode(prompt))
+            if max_prompt_length < prompt_length:
+                logger.info(
+                    f"Skipping prompt {prompt[:100]}... with length {prompt_length}, which "
+                    f"is greater than maximum prompt length {max_prompt_length}"
+                )
+                continue
+            prompts.append(prompt)
+            examples.append(deepcopy(dict(input_example)))
+            gts.append(label)
+    else:
+        raise Exception("unknown dataset")
+    return examples, gts, prompts
+
+
 def format_chat_prompt(message: str):
     DEFAULT_SYSTEM_PROMPT = (
         "You are a helpful, respectful and honest assistant. "
@@ -229,6 +330,7 @@ def format_chat_prompt(message: str):
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(module)s - %(levelname)s - %(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset-name", help="Name of the dataset", required=True)
     # parser.add_argument("--input-path", help="Path to data with questions and documents to use.", required=True)
     parser.add_argument(
         "--model",
@@ -302,7 +404,7 @@ if __name__ == "__main__":
 
     logger.info("running %s", " ".join(sys.argv))
     main(
-        # args.input_path,
+        args.dataset_name,
         args.model,
         args.alpha,
         args.layer_threshold,
