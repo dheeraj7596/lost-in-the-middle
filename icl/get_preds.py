@@ -328,7 +328,7 @@ def get_data(dataset_name, max_prompt_length, tokenizer):
         df = load_dataset("gsm8k", 'main', split="test")
         for input_example in df:
             question = input_example["question"]
-            answer = input_example["answer"].split("####")[-1].strip()
+            answer = input_example["answer"].split("####")[1].strip()
             prompt = reformat(dataset_name, question=question)
             # prompt_length = len(tokenizer(prompt)["input_ids"])
             prompt_length = len(tokenizer.encode(prompt))
