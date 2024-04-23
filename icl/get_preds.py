@@ -133,20 +133,20 @@ Text: {text}
 Label:"""
         return prompt_format.format_map({"text": text})
     elif dataset_name == "rte":
-        prompt_format = """<s>Sentence1: Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.
-Sentence2: Christopher Reeve had an accident.
+        prompt_format = """<s>Sentence1: No Weapons of Mass Destruction Found in Iraq Yet.
+Sentence2: Weapons of Mass Destruction Found in Iraq.
 Label: 1
 ###
-Sentence1: Yet, we now are discovering that antibiotics are losing their effectiveness against illness. Disease-causing bacteria are mutating faster than we can come up with new antibiotics to fight the new variations.
-Sentence2: Bacteria is winning the war against antibiotics.
+Sentence1: A place of sorrow, after Pope John Paul II died, became a place of celebration, as Roman Catholic faithful gathered in downtown Chicago to mark the installation of new Pope Benedict XVI.
+Sentence2: Pope Benedict XVI is the new leader of the Roman Catholic Church.
 Label: 0
 ###
-Sentence1: Cairo is now home to some 15 million people - a burgeoning population that produces approximately 10,000 tonnes of rubbish per day, putting an enormous strain on public services. In the past 10 years, the government has tried hard to encourage private investment in the refuse sector, but some estimate 4,000 tonnes of waste is left behind every day, festering in the heat as it waits for someone to clear it up. It is often the people in the poorest neighbourhoods that are worst affected. But in some areas they are fighting back. In Shubra, one of the northern districts of the city, the residents have taken to the streets armed with dustpans and brushes to clean up public areas which have been used as public dumps.
-Sentence2: 15 million tonnes of rubbish are produced daily in Cairo.
+Sentence1: Brian Brohm, the Louisville quarterback, threw for 368 yards and five touchdowns as the Cardinals beat visiting Oregon State 63-27.
+Sentence2: The quarterback threw for 413 yards and three touchdowns, and then ran to the end zone two more times.
 Label: 1
 ###
-Sentence1: In 1979, the leaders signed the Egypt-Israel peace treaty on the White House lawn. Both President Begin and Sadat received the Nobel Peace Prize for their work. The two nations have enjoyed peaceful relations to this day.
-Sentence2: The Israel-Egypt Peace Agreement was signed in 1979.
+Sentence1: Herceptin was already approved to treat the sickest breast cancer patients, and the company said, Monday, it will discuss with federal regulators the possibility of prescribing the drug for more breast cancer patients.
+Sentence2: Herceptin can be used to treat breast cancer.
 Label: 0
 ###
 Sentence1: {sent1}
@@ -292,7 +292,7 @@ def get_data(dataset_name, max_prompt_length, tokenizer):
             examples.append(deepcopy(dict(input_example)))
             gts.append(label)
     elif dataset_name == "rte":
-        df = load_dataset("nyu-mll/glue", "rte", split="test")
+        df = load_dataset("nyu-mll/glue", "rte", split="validation")
         for input_example in df:
             sent1 = input_example["sentence1"]
             sent2 = input_example["sentence2"]
