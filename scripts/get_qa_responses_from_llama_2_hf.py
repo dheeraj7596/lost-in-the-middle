@@ -21,7 +21,6 @@ import random
 import sys
 from copy import deepcopy
 from functools import partial
-from utils import modified_model_forward, modified_layer_forward
 
 import torch
 from tqdm import tqdm
@@ -45,7 +44,7 @@ def chunks_by_size(lst, n):
 
 
 class ModelWrapper:
-    def __init__(self, checkpoint, alpha, layer_threshold, tokenizer_name=None, gpu_batch_size=16):
+    def __init__(self, checkpoint, layer_threshold, tokenizer_name=None, gpu_batch_size=16):
         self.gpu_batch_size = gpu_batch_size
         if tokenizer_name is None:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -61,9 +60,7 @@ class ModelWrapper:
                                                           trust_remote_code=True,
                                                           attn_implementation="eager",
                                                           device_map="auto")
-        self.alpha = alpha
         self.layer_threshold = layer_threshold
-        self.reweight_attn()
         self.model.eval()
 
     def inference(self, prompts, generation_config, skip_special_tokens=False):
@@ -81,16 +78,10 @@ class ModelWrapper:
                     outputs, skip_special_tokens=skip_special_tokens)
         return all_outputs
 
-    def reweight_attn(self):
-        self.model.model.forward = partial(modified_model_forward, self.model.model)
-        for i, layer in enumerate(self.model.model.layers):
-            layer.forward = partial(modified_layer_forward, layer, layer_threshold=self.layer_threshold, alpha=self.alpha)
-
 
 def main(
         input_path,
         model_name,
-        alpha,
         layer_threshold,
         bsize,
         debug,
@@ -178,7 +169,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name, alpha=alpha, layer_threshold=layer_threshold, gpu_batch_size=bsize)
+    model = ModelWrapper(model_name, layer_threshold=layer_threshold, gpu_batch_size=bsize)
     if temperature != 0:
         do_sample = True
     else:
@@ -196,7 +187,8 @@ def main(
     responses = []
     for p, s in zip(prompts, raw_responses):
         print(idx)
-        ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[-1].strip()
+        ans = s.replace(model.tokenizer.eos_token, "").replace("<s>", "").strip().split(p.replace("<s>", "").strip())[
+            -1].strip()
         print("Final Pred:", ans)
         print("*" * 80)
         responses.append(ans)
@@ -264,18 +256,6 @@ if __name__ == "__main__":
         help="If set, runs only on 100 samples",
     )
     parser.add_argument(
-        "--alpha",
-        type=float,
-        help="Alpha to weight residual",
-        default=1.0
-    )
-    parser.add_argument(
-        "--layer_threshold",
-        type=int,
-        help="Alpha to weight residual",
-        default=0
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         help="Seed",
@@ -307,7 +287,6 @@ if __name__ == "__main__":
     main(
         args.input_path,
         args.model,
-        args.alpha,
         args.layer_threshold,
         args.bsize,
         args.debug,
