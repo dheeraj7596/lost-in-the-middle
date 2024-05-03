@@ -3,6 +3,7 @@ gpu=$1
 CUDA_VISIBLE_DEVICES=${gpu} WANDB_PROJECT=longest_distractor torchrun --nproc_per_node=2 --master_port=9985 training/train.py \
   --model_name_or_path /data/shared/llama-hf/llama-2-7b-hf/ \
   --data_path training/data/longest_distractors.json \
+  --val_data_path training/data/val_alpaca_gsm8k.json \
   --bf16 True \
   --output_dir models/weights/longest_distractors_alpaca_7b_6667 \
   --num_train_epochs 3 \
@@ -18,6 +19,9 @@ CUDA_VISIBLE_DEVICES=${gpu} WANDB_PROJECT=longest_distractor torchrun --nproc_pe
   --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
   --tf32 True \
   --seed 42 \
+  --logging_steps 10 \
   --report_to="wandb" \
+  --evaluation_strategy="steps" \
+  --eval_steps 10 \
   --gradient_checkpointing True
 CUDA_VISIBLE_DEVICES=${gpu} python3 -i training/baselines/prompt_tool_api_react.py /data/shared/llama-hf/llama-2-70b-hf data/ToolBench_sambanova/home/test.csv home upperbound data/ToolBench_sambanova/Tool_Documentations.xlsx Final output/home/api_call/out_llama_70b_upperbound_react_copy.csv
