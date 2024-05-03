@@ -19,7 +19,6 @@ from typing import Dict, Optional, Sequence
 import pickle
 
 import torch
-from torch.nn import CrossEntropyLoss
 import transformers
 import utils
 from torch.utils.data import Dataset
