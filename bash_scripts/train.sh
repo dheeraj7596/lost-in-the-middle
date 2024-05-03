@@ -24,5 +24,20 @@ CUDA_VISIBLE_DEVICES=${gpu} WANDB_PROJECT=longest_distractor torchrun --nproc_pe
   --evaluation_strategy="steps" \
   --eval_steps 10 \
   --gradient_checkpointing True
-cd ../ContinualToolformerDraft/
-CUDA_VISIBLE_DEVICES=${gpu} python3 -i training/baselines/prompt_tool_api_react.py /data/shared/llama-hf/llama-2-70b-hf data/ToolBench_sambanova/home/test.csv home upperbound data/ToolBench_sambanova/Tool_Documentations.xlsx Final output/home/api_call/out_llama_70b_upperbound_react_copy.csv
+
+for gold_index in 0 4 9 14 19; do
+  CUDA_VISIBLE_DEVICES=${gpu} python -u ./scripts/get_qa_responses_from_llama_2_hf.py \
+    --input-path qa_data/20_total_documents/nq-open-20_total_documents_gold_at_${gold_index}.jsonl.gz \
+    --max-new-tokens 100 \
+    --bsize 8 \
+    --model models/weights/longest_distractors_alpaca_7b_6667 \
+    --output-path qa_predictions/20_total_documents/7b_alpaca_longest_distractors/nq-open-20_total_documents_gold_at_${gold_index}-7b-alpaca-longest-predictions.jsonl.gz
+done
+
+gold_index=0
+CUDA_VISIBLE_DEVICES=${gpu} python -i ./scripts/get_qa_responses_from_llama_2_hf.py \
+  --input-path qa_data/20_total_documents/nq-open-20_total_documents_gold_at_${gold_index}.jsonl.gz \
+  --max-new-tokens 100 \
+  --bsize 8 \
+  --model models/weights/longest_distractors_alpaca_7b_6667 \
+  --output-path qa_predictions/20_total_documents/7b_alpaca_longest_distractors/nq-open-20_total_documents_gold_at_${gold_index}-7b-alpaca-longest-predictions_copy.jsonl.gz
