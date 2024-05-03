@@ -44,7 +44,7 @@ def chunks_by_size(lst, n):
 
 
 class ModelWrapper:
-    def __init__(self, checkpoint, layer_threshold, tokenizer_name=None, gpu_batch_size=16):
+    def __init__(self, checkpoint, tokenizer_name=None, gpu_batch_size=16):
         self.gpu_batch_size = gpu_batch_size
         if tokenizer_name is None:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -60,7 +60,6 @@ class ModelWrapper:
                                                           trust_remote_code=True,
                                                           attn_implementation="eager",
                                                           device_map="auto")
-        self.layer_threshold = layer_threshold
         self.model.eval()
 
     def inference(self, prompts, generation_config, skip_special_tokens=False):
@@ -168,7 +167,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     logger.info("Loading model")
-    model = ModelWrapper(model_name, layer_threshold=layer_threshold, gpu_batch_size=bsize)
+    model = ModelWrapper(model_name, gpu_batch_size=bsize)
     if temperature != 0:
         do_sample = True
     else:
