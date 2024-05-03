@@ -37,13 +37,11 @@ def modify(question, answer, wiki_sample, tokenizer):
     return sample
 
 
-def get_wiki_sample(wiki_dataset, prev_sample):
+def get_wiki_sample(wiki_dataset, prev_title):
     for example in wiki_dataset:
-        temp = example["text"]
-        if len(prev_sample) == 0:
-            yield temp
-        else:
-            yield temp.split(prev_sample)[-1].strip
+        if len(prev_title) > 0 and example["title"] == prev_title:
+            continue
+        yield example["text"], example["title"]
 
 
 if __name__ == "__main__":
@@ -62,12 +60,13 @@ if __name__ == "__main__":
 
     out_dic_list = []
     i = 0
-    prev_sample = ""
+    prev_title = ""
     for q, a in zip(questions, answers):
         print("Running", i)
-        wiki_sample = next(get_wiki_sample(wiki_dataset, prev_sample))
-        prev_sample = wiki_sample
+        wiki_sample, wiki_title = next(get_wiki_sample(wiki_dataset, prev_title))
+        prev_title = wiki_title
         new_q = modify(q, a, wiki_sample, tokenizer)
+        print("Title:", wiki_title)
         print(new_q)
         print("*" * 80)
         out_dic_list.append({"instruction": new_q, "input": "", "output": a})
