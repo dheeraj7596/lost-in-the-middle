@@ -82,7 +82,6 @@ class ModelWrapper:
 def main(
         input_path,
         model_name,
-        layer_threshold,
         bsize,
         debug,
         temperature,
@@ -287,7 +286,6 @@ if __name__ == "__main__":
     main(
         args.input_path,
         args.model,
-        args.layer_threshold,
         args.bsize,
         args.debug,
         args.temperature,
