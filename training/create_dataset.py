@@ -13,7 +13,6 @@ from transformers import AutoTokenizer
 
 
 def modify(question, answer, wiki_sample, tokenizer):
-    assert len(sent_tokenize(wiki_sample)) > len(sent_tokenize(question))
     prompt_no_input = PROMPT_DICT["prompt_no_input"]
     wiki_sentences = sent_tokenize(wiki_sample)
     sent_index = len(wiki_sentences)
@@ -37,9 +36,9 @@ def modify(question, answer, wiki_sample, tokenizer):
     return sample
 
 
-def get_wiki_sample(wiki_dataset, prev_titles):
+def get_wiki_sample(wiki_dataset, prev_titles, question):
     for example in wiki_dataset:
-        if example["title"] in prev_titles:
+        if example["title"] in prev_titles or len(sent_tokenize(example["text"])) <= len(sent_tokenize(question)):
             continue
         yield example["text"], example["title"]
 
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     prev_titles = []
     for q, a in zip(questions, answers):
         print("Running", i)
-        wiki_sample, wiki_title = next(get_wiki_sample(wiki_dataset, prev_titles))
+        wiki_sample, wiki_title = next(get_wiki_sample(wiki_dataset, prev_titles, q))
         prev_titles.append(wiki_title)
         new_q = modify(q, a, wiki_sample, tokenizer)
         print("Title:", wiki_title)
