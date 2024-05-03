@@ -56,6 +56,9 @@ if __name__ == "__main__":
         print("Running", i)
         wiki_sample = next(iter(wiki_dataset))["text"]
         new_q = modify(q, a, wiki_sample, tokenizer)
+        if i % 10 == 0:
+            print(new_q)
+        print("*" * 80)
         out_dic_list.append({"instruction": new_q, "input": "", "output": a})
         i += 1
 
