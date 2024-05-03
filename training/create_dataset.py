@@ -32,7 +32,7 @@ def modify(question, answer, wiki_sample, tokenizer):
     final_sentences = copy.deepcopy(wiki_sentences)
     for i, ind in enumerate(inds):
         final_sentences[ind - 1] = " ".join([final_sentences[ind - 1], question_sentences[i]])
-    sample = " ".join(final_sentences) + " " + question_sentences[-1]
+    sample = " ".join(final_sentences) + " \n" + question_sentences[-1]
     return sample
 
 
