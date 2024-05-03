@@ -6,7 +6,7 @@ sys.path.append('/data/dmekala/lost-in-the-middle/training')
 
 import numpy as np
 from datasets import load_dataset
-from training.train import PROMPT_DICT
+from train import PROMPT_DICT
 from nltk import sent_tokenize
 from transformers import AutoTokenizer
 
