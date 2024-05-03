@@ -68,8 +68,7 @@ if __name__ == "__main__":
         wiki_sample = next(get_wiki_sample(wiki_dataset, prev_sample))
         prev_sample = wiki_sample
         new_q = modify(q, a, wiki_sample, tokenizer)
-        if i % 10 == 0:
-            print(new_q)
+        print(new_q)
         print("*" * 80)
         out_dic_list.append({"instruction": new_q, "input": "", "output": a})
         i += 1
