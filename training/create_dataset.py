@@ -1,6 +1,5 @@
 import copy
 import json
-import random
 import sys
 
 sys.path.append('/data/dmekala/lost-in-the-middle/training')
@@ -44,8 +43,8 @@ def get_wiki_sample(wiki_dataset, prev_titles, question):
 
 
 if __name__ == "__main__":
-    model_path = "gpt2"
-    out_path = "data/gsm8k_1000_distractors.json"
+    model_path = sys.argv[1]
+    out_path = "training/data/gsm8k_1000_distractors.json"
 
     df = load_dataset("gsm8k", 'main', split="train").to_pandas()
     df_sampled = df.sample(1000).reset_index(drop=True)
@@ -71,6 +70,4 @@ if __name__ == "__main__":
         out_dic_list.append({"instruction": new_q, "input": "", "output": a})
         i += 1
 
-    with open(out_path, "w") as f:
-        for k in out_dic_list:
-            f.write(json.dumps(k, indent=4))
+    json.dump(out_dic_list, open(out_path, "w"))
