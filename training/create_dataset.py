@@ -37,13 +37,17 @@ def modify(question, answer, wiki_sample, tokenizer):
     return sample
 
 
-def get_wiki_sample(wiki_dataset):
+def get_wiki_sample(wiki_dataset, prev_sample):
     for example in wiki_dataset:
-        yield example["text"]
+        temp = example["text"]
+        if len(prev_sample) == 0:
+            yield temp
+        else:
+            yield temp.split(prev_sample)[-1].strip
 
 
 if __name__ == "__main__":
-    model_path = sys.argv[1]
+    model_path = "gpt2"
     out_path = "data/gsm8k_1000_distractors.json"
 
     df = load_dataset("gsm8k", 'main', split="train").to_pandas()
@@ -58,9 +62,11 @@ if __name__ == "__main__":
 
     out_dic_list = []
     i = 0
+    prev_sample = ""
     for q, a in zip(questions, answers):
         print("Running", i)
-        wiki_sample = get_wiki_sample(wiki_dataset)
+        wiki_sample = next(get_wiki_sample(wiki_dataset, prev_sample))
+        prev_sample = wiki_sample
         new_q = modify(q, a, wiki_sample, tokenizer)
         if i % 10 == 0:
             print(new_q)
