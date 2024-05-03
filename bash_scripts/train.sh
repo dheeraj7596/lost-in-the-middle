@@ -24,4 +24,5 @@ CUDA_VISIBLE_DEVICES=${gpu} WANDB_PROJECT=longest_distractor torchrun --nproc_pe
   --evaluation_strategy="steps" \
   --eval_steps 10 \
   --gradient_checkpointing True
+cd ../ContinualToolformerDraft/
 CUDA_VISIBLE_DEVICES=${gpu} python3 -i training/baselines/prompt_tool_api_react.py /data/shared/llama-hf/llama-2-70b-hf data/ToolBench_sambanova/home/test.csv home upperbound data/ToolBench_sambanova/Tool_Documentations.xlsx Final output/home/api_call/out_llama_70b_upperbound_react_copy.csv
