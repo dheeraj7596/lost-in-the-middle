@@ -51,10 +51,13 @@ if __name__ == "__main__":
     wiki_dataset = load_dataset("wikipedia", "20220301.en", split="train", streaming=True)
 
     out_dic_list = []
+    i = 0
     for q, a in zip(questions, answers):
+        print("Running", i)
         wiki_sample = next(iter(wiki_dataset))["text"]
         new_q = modify(q, a, wiki_sample, tokenizer)
         out_dic_list.append({"instruction": new_q, "input": "", "output": a})
+        i += 1
 
     with open(out_path, "w") as f:
         for k in out_dic_list:
