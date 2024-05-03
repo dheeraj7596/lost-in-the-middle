@@ -2,6 +2,7 @@ import copy
 import json
 import random
 import sys
+
 sys.path.append('/data/dmekala/lost-in-the-middle/training')
 
 import numpy as np
@@ -36,6 +37,11 @@ def modify(question, answer, wiki_sample, tokenizer):
     return sample
 
 
+def get_wiki_sample(wiki_dataset):
+    for example in wiki_dataset:
+        yield example["text"]
+
+
 if __name__ == "__main__":
     model_path = sys.argv[1]
     out_path = "data/gsm8k_1000_distractors.json"
@@ -54,7 +60,7 @@ if __name__ == "__main__":
     i = 0
     for q, a in zip(questions, answers):
         print("Running", i)
-        wiki_sample = next(iter(wiki_dataset))["text"]
+        wiki_sample = get_wiki_sample(wiki_dataset)
         new_q = modify(q, a, wiki_sample, tokenizer)
         if i % 10 == 0:
             print(new_q)
