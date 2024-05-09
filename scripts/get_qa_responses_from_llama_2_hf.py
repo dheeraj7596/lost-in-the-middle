@@ -141,7 +141,12 @@ def main(
                     query_aware_contextualization=query_aware_contextualization,
                 )
 
-            if "chat" in model_name:
+            if "THUDM" in model_name:
+                if did_format_warn is False:
+                    logger.warning(f"Model {model_name} is a GLM model, applying chatGLM formatting")
+                    did_format_warn = True
+                prompt = format_chat_glm_prompt(prompt)
+            elif "chat" in model_name:
                 if did_format_warn is False:
                     logger.warning(f"Model {model_name} appears to be an chat model, applying chat formatting")
                     did_format_warn = True
@@ -216,6 +221,16 @@ def format_chat_prompt(message: str):
         "to a question, please don't share false information."
     )
     lines = ["<s>[INST] <<SYS>>", DEFAULT_SYSTEM_PROMPT, "<</SYS>>", "", f"{message} [/INST]"]
+    return "\n".join(lines)
+
+
+def format_chat_glm_prompt(message: str):
+    DEFAULT_SYSTEM_PROMPT = (
+        "<|system|> "
+        "You are ChatGLM3, a large language model trained by Zhipu.AI. Follow the user's instructions carefully. "
+        "<|user|> "
+    )
+    lines = [DEFAULT_SYSTEM_PROMPT, "", f"{message} \n <|assistant|>"]
     return "\n".join(lines)
 
 
