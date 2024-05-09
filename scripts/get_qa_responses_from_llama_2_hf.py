@@ -48,7 +48,7 @@ class ModelWrapper:
         self.gpu_batch_size = gpu_batch_size
         if tokenizer_name is None:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                checkpoint, padding_side='left', truncation_side="right")
+                checkpoint, padding_side='left', truncation_side="right", trust_remote_code=True)
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 tokenizer_name, padding_side='left', truncation_side="right")
@@ -97,7 +97,7 @@ def main(
     pathlib.Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     logger.info("Loading tokenizer")
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=True, trust_remote_code=True)
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.eos_token  # to avoid an error
 
